@@ -50,7 +50,7 @@ function PartDetail() {
           alt={data.part.name}
           style={{
             width: '100%',
-            maxHeight: '320px',
+            maxHeight: '500px',
             objectFit: 'contain',
             borderRadius: '16px',
             margin: '20px 0',

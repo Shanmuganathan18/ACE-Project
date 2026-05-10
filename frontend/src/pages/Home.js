@@ -15,7 +15,7 @@ function Home() {
   }, [navigate]);
 
   useEffect(() => {
-    axios.get('http://localhost:3000/vehicles')
+    axios.get('https://ace-backend-4v7m.onrender.com/vehicles')
       .then(res => setVehicles(res.data))
       .catch(err => console.log(err));
   }, []);

@@ -12,7 +12,7 @@ function Parts() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    axios.get(`http://localhost:3000/vehicles/${id}/parts`)
+    axios.get(`https://ace-backend-4v7m.onrender.com/vehicles/${id}/parts`)
       .then(res => {
         setParts(res.data);
         setFiltered(res.data);

@@ -16,12 +16,12 @@ function Admin() {
   }, [navigate]);
 
   useEffect(() => {
-    axios.get('http://localhost:3000/vehicles')
+    axios.get('https://ace-backend-4v7m.onrender.com/vehicles')
       .then(res => {
         setVehicles(res.data);
         // Fetch parts for all vehicles
         res.data.forEach(v => {
-          axios.get(`http://localhost:3000/vehicles/${v.id}/parts`)
+          axios.get(`https://ace-backend-4v7m.onrender.com/vehicles/${v.id}/parts`)
             .then(r => setParts(prev => [...prev, ...r.data]));
         });
       });

@@ -29,7 +29,7 @@ function PartDetail() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    axios.get(`http://localhost:3000/parts/${id}`)
+   axios.get(`https://ace-backend-4v7m.onrender.com/parts/${id}`)
       .then(res => setData(res.data))
       .catch(err => console.log(err));
   }, [id]);

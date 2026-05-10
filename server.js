@@ -1,7 +1,5 @@
 const express = require('express');
 const cors = require('cors');
-const sqlite3 = require('sqlite3').verbose();
-const path = require('path');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -9,120 +7,75 @@ const PORT = process.env.PORT || 3000;
 app.use(cors());
 app.use(express.json());
 
-// Database setup
-const db = new sqlite3.Database('./ace.db', (err) => {
-  if (err) console.error(err.message);
-  else console.log('Connected to SQLite database');
-});
+// In-memory data
+const vehicles = [
+  { id: 1, name: 'Royal Enfield Classic 350', category: 'Motorcycle', 
+    description: 'An iconic Indian motorcycle known for its classic design and thumping 349cc engine.',
+    image_url: '/images/engine.jpg' }
+];
 
-// Create tables
-db.serialize(() => {
-  db.run(`CREATE TABLE IF NOT EXISTS vehicles (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    name TEXT NOT NULL,
-    category TEXT NOT NULL,
-    description TEXT,
-    image_url TEXT
-  )`);
+const parts = [
+  { id: 1, vehicle_id: 1, name: 'Piston & Cylinder', category: 'Engine', image_url: '/images/piston.jpg' },
+  { id: 2, vehicle_id: 1, name: 'Spark Plug', category: 'Engine', image_url: '/images/spark-plug.jpg' },
+  { id: 3, vehicle_id: 1, name: 'Crankshaft', category: 'Engine', image_url: '/images/crankshaft.jpg' },
+  { id: 4, vehicle_id: 1, name: 'Camshaft & Valves', category: 'Engine', image_url: '/images/camshaft.jpg' },
+  { id: 5, vehicle_id: 1, name: 'Carburetor', category: 'Engine', image_url: '/images/carburetor.jpg' },
+  { id: 6, vehicle_id: 1, name: 'Chassis Frame', category: 'Chassis', image_url: '/images/frame.jpg' },
+  { id: 7, vehicle_id: 1, name: 'Fuel Tank', category: 'Chassis', image_url: '/images/fuel-tank.jpg' },
+  { id: 8, vehicle_id: 1, name: 'Battery', category: 'Electrical', image_url: '/images/battery.jpg' },
+  { id: 9, vehicle_id: 1, name: 'Alternator', category: 'Electrical', image_url: '/images/alternator.jpg' },
+  { id: 10, vehicle_id: 1, name: 'Wiring Harness', category: 'Electrical', image_url: '/images/wiring.jpg' },
+  { id: 11, vehicle_id: 1, name: 'ECU', category: 'Electrical', image_url: '/images/ecu.jpg' },
+  { id: 12, vehicle_id: 1, name: 'Suspension System', category: 'Suspension', image_url: '/images/suspension.jpg' },
+  { id: 13, vehicle_id: 1, name: 'Front Disc Brake', category: 'Braking', image_url: '/images/front-brake.jpg' },
+  { id: 14, vehicle_id: 1, name: 'Steering Assembly', category: 'Steering', image_url: '/images/steering.jpg' },
+  { id: 15, vehicle_id: 1, name: 'Clutch Assembly', category: 'Transmission', image_url: '/images/clutch.jpg' },
+  { id: 16, vehicle_id: 1, name: 'Gearbox', category: 'Transmission', image_url: '/images/gearbox.jpg' },
+  { id: 17, vehicle_id: 1, name: 'Drive Chain', category: 'Transmission', image_url: '/images/chain.jpg' },
+  { id: 18, vehicle_id: 1, name: 'Instrument Cluster', category: 'Instrumentation', image_url: '/images/instrument.jpg' },
+  { id: 19, vehicle_id: 1, name: 'Rider Seat', category: 'Interior', image_url: '/images/seat.jpg' },
+];
 
-  db.run(`CREATE TABLE IF NOT EXISTS parts (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    vehicle_id INTEGER,
-    name TEXT NOT NULL,
-    category TEXT NOT NULL,
-    image_url TEXT
-  )`);
-
-  db.run(`CREATE TABLE IF NOT EXISTS part_details (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    part_id INTEGER,
-    manufacturing TEXT,
-    physics TEXT,
-    chemistry TEXT,
-    mathematics TEXT
-  )`);
-
-  // Insert sample data if empty
-  db.get('SELECT COUNT(*) as c FROM vehicles', (err, row) => {
-    if (row.c === 0) {
-      db.run(`INSERT INTO vehicles (name, category, description, image_url) 
-        VALUES ('Royal Enfield Classic 350', 'Motorcycle', 
-        'An iconic Indian motorcycle known for its classic design and thumping 349cc engine.',
-        '/images/engine.jpg')`
-      , function() {
-        const vehicleId = this.lastID;
-
-        const parts = [
-          ['Piston & Cylinder', 'Engine', '/images/piston.jpg'],
-          ['Spark Plug', 'Engine', '/images/spark-plug.jpg'],
-          ['Crankshaft', 'Engine', '/images/crankshaft.jpg'],
-          ['Camshaft & Valves', 'Engine', '/images/camshaft.jpg'],
-          ['Carburetor', 'Engine', '/images/carburetor.jpg'],
-          ['Chassis Frame', 'Chassis', '/images/frame.jpg'],
-          ['Fuel Tank', 'Chassis', '/images/fuel-tank.jpg'],
-          ['Battery', 'Electrical', '/images/battery.jpg'],
-          ['Alternator', 'Electrical', '/images/alternator.jpg'],
-          ['Wiring Harness', 'Electrical', '/images/wiring.jpg'],
-          ['ECU', 'Electrical', '/images/ecu.jpg'],
-          ['Suspension System', 'Suspension', '/images/suspension.jpg'],
-          ['Front Disc Brake', 'Braking', '/images/front-brake.jpg'],
-          ['Steering Assembly', 'Steering', '/images/steering.jpg'],
-          ['Clutch Assembly', 'Transmission', '/images/clutch.jpg'],
-          ['Gearbox', 'Transmission', '/images/gearbox.jpg'],
-          ['Drive Chain', 'Transmission', '/images/chain.jpg'],
-          ['Instrument Cluster', 'Instrumentation', '/images/instrument.jpg'],
-          ['Rider Seat', 'Interior', '/images/seat.jpg'],
-        ];
-
-        parts.forEach(([name, category, image_url]) => {
-          db.run(
-            'INSERT INTO parts (vehicle_id, name, category, image_url) VALUES (?, ?, ?, ?)',
-            [vehicleId, name, category, image_url],
-            function() {
-              const partId = this.lastID;
-              db.run(
-                'INSERT INTO part_details (part_id, manufacturing, physics, chemistry, mathematics) VALUES (?, ?, ?, ?, ?)',
-                [partId,
-                  `The ${name} is manufactured using precision engineering processes including casting, forging, and CNC machining to exact tolerances.`,
-                  `The ${name} operates on fundamental physics principles including thermodynamics, mechanics, and electromagnetic induction.`,
-                  `The ${name} is made from high-grade materials including alloy steel, aluminium alloys, and specialized compounds for durability.`,
-                  `Mathematical formulas governing ${name} include force calculations, torque equations, and efficiency ratios used in engineering design.`
-                ]
-              );
-            }
-          );
-        });
-        console.log('Sample data inserted!');
-      });
-    }
-  });
-});
+const part_details = [
+  { id: 1, part_id: 1, manufacturing: 'Pistons are manufactured by gravity die casting of aluminium-silicon alloy (Al-Si). The casting process involves pouring molten aluminium into a steel mould. After cooling, CNC machining gives precise dimensions for the piston rings, pin bore, and skirt. Surface is then coated with tin or iron for wear resistance.', physics: 'Thermodynamics: The piston converts heat energy from combustion into mechanical work. During the power stroke, hot gases at 2000°C and 50 bar pressure push the piston downward. This follows the ideal gas law PV=nRT. The Classic 350 has a 349cc single cylinder with bore 72mm and stroke 90mm.', chemistry: 'Aluminium-Silicon alloy (LM13 — 12% Si) is used for lightweight strength. Silicon reduces thermal expansion and improves wear resistance. The piston crown handles 300°C continuous temperature. Piston rings are made from grey cast iron for natural lubrication.', mathematics: 'Piston area A = π/4 × D² = π/4 × (0.072)² = 0.004072 m². At peak pressure 50 bar: Force = P×A = 50×10⁵ × 0.004072 = 20,360 N. Compression ratio CR = 8.5:1. Engine displacement = 349cc.' },
+  { id: 2, part_id: 2, manufacturing: 'The spark plug centre electrode is made from nickel-yttrium alloy. The ceramic insulator is made from aluminium oxide (Al₂O₃) fired at 1600°C. The steel shell is cold forged and zinc plated. The electrode gap is set to 0.7-0.8mm. The Classic 350 uses NGK BP6ES spark plug with 14mm thread.', physics: 'The ignition coil steps up 12V to 20,000-40,000V using electromagnetic induction. When this high voltage is applied across the 0.7mm gap, electric field exceeds dielectric breakdown of air creating plasma spark at 60,000K temperature which ignites the compressed air-fuel mixture.', chemistry: 'Centre electrode: Nickel-yttrium alloy (Ni-Y) resists erosion at high temperatures up to 1000°C. Ceramic insulator: Aluminium oxide (Al₂O₃) — electrical resistivity 10¹⁴ Ω.cm, withstands 1000°C. Iridium tip has melting point 2446°C — 6× harder than platinum.', mathematics: 'Ignition voltage required: V = E × d = 3×10⁶ V/m × 0.0007m = 2100V minimum. Spark energy: E = ½CV² = ½ × 10×10⁻¹² × (30000)² = 4.5 mJ. Spark duration: 1-2 milliseconds. At 5500 RPM, spark fires every 0.0218 seconds.' },
+  { id: 3, part_id: 3, manufacturing: 'The crankshaft is manufactured by drop forging of EN8 carbon steel. A heated steel billet is placed between two precision dies in a 500-tonne forging press. After forging, journals are ground on CNC crankshaft grinder to tolerance of ±0.002mm. Journals are induction hardened to 55-60 HRC and dynamically balanced.', physics: 'The crankshaft converts reciprocating linear motion of piston into rotational motion using crank-slider mechanism. The crank throw (45mm) determines stroke length (90mm = 2×45mm). The flywheel stores rotational kinetic energy and maintains smooth rotation between power strokes.', chemistry: 'EN8 medium carbon steel (0.4% C, 0.7% Mn) — tensile strength 620 MPa. Carbon provides hardness while manganese improves hardenability. Induction hardening creates hard surface layer (55-60 HRC) while maintaining tough core. SAE 20W-50 engine oil lubricates all journal bearings.', mathematics: 'Crank throw r = stroke/2 = 90/2 = 45mm. Engine torque T = F × r = 20,360 × 0.045 = 916 Nm peak. Useful torque = 28 Nm at 4000 RPM. Angular velocity ω = 2πN/60 = 419 rad/s. Power P = T×ω = 28×419 = 11,732 W = 15.7 HP.' },
+  { id: 4, part_id: 4, manufacturing: 'The camshaft is manufactured by casting or forging of chilled cast iron. Cam lobes are ground to precise profiles on a CNC cam grinding machine. The Classic 350 uses OHV design with pushrods. Valves are made from heat-resistant steel by hot forging and precision grinding.', physics: 'The camshaft rotates at half crankshaft speed (1:2 ratio via timing chain). Each cam lobe controls valve opening duration, lift, and timing. Intake valve opens 10° BTDC and closes 50° ABDC. Valve overlap improves cylinder scavenging and breathing efficiency at high RPM.', chemistry: 'Camshaft: Chilled cast iron — surface hardness 600 HV. Intake valve: EN52 martensitic steel — chromium and silicon withstand 400°C. Exhaust valve: 21-4N austenitic steel — 21% chromium, 4% nickel — withstands 750°C exhaust temperatures. Valve spring: Chromium-vanadium steel wire.', mathematics: 'Cam ratio = Crankshaft RPM / Camshaft RPM = 2:1. At 5500 RPM engine: camshaft = 2750 RPM. Valve lift = 8mm intake, 7.5mm exhaust. Valve spring force = k × x = 25 N/mm × 8mm = 200N at full lift. Rocker arm ratio = 1.5:1.' },
+  { id: 5, part_id: 5, manufacturing: 'The carburetor body is die cast from zinc alloy (Zamak) or aluminium alloy, then CNC machined for precise bore dimensions and fuel passages. The main jet, needle jet, and pilot jet are made from brass by screw machining. The Classic 350 uses a CV type carburetor — UCO 26mm with automatic slide operation.', physics: 'The carburetor works on Bernoulli principle. As air flows through the venturi, velocity increases and pressure drops below atmospheric. This pressure difference draws fuel from the float bowl through the main jet. The air-fuel mixture is atomised into fine droplets before entering the cylinder.', chemistry: 'Carburetor body: Zamak (zinc-aluminium alloy) — good corrosion resistance. Jets: Brass (Cu-Zn alloy) — easy to machine precise orifices. Float: Brass or ABS plastic — buoyant in petrol. Fuel: Petrol (C₈H₁₈) — octane rating 87-91 RON. Stoichiometric ratio: 14.7:1 air to fuel by mass.', mathematics: 'Venturi pressure drop: ΔP = ½ρv² = ½×1.2×(40)² = 960 Pa. Air-fuel ratio = 14.7:1 by mass. At 5500 RPM, airflow = 180 litres/minute. Main jet size = 110 (0.110mm orifice). Float level: 15.5mm from gasket face.' },
+  { id: 6, part_id: 6, manufacturing: 'The Classic 350 uses a single downtube frame made from ERW mild steel tubes of 25-40mm diameter. Tubes are cut and bent using CNC hydraulic tube bending machines. All joints are MIG welded using ER70S-6 welding wire. After welding, frame is stress-relieved at 600°C, shot blasted, zinc phosphated, and powder coated at 180°C.', physics: 'The frame is a space frame structure withstanding static load of 250kg and dynamic bump loads of 3G = 7500N, braking loads, and cornering loads. Torsional stiffness is critical for handling. The steering head angle and frame geometry determine the handling characteristics.', chemistry: 'Mild steel (IS 1079 — Fe360): tensile strength 360 MPa, yield strength 240 MPa. Carbon content 0.12-0.20% gives good weldability. ERW tubing made by forming cold rolled strip. Zinc phosphate coating provides corrosion protection. Polyester powder coat provides UV and scratch resistance.', mathematics: 'Frame weight = 18kg. Bending stress σ = M×y/I. For downtube under braking: M = F×L = 3000×0.6 = 1800 Nm. For 35mm tube with 2mm wall: I = 36,300 mm⁴. y = 17.5mm. σ = 867 MPa. Safety factor = 360/867 requires multiple tubes in parallel.' },
+  { id: 7, part_id: 7, manufacturing: 'The fuel tank is manufactured from cold rolled mild steel sheet (0.8mm) by deep drawing and pressing into two halves. The halves are MIG welded together and the weld seam is ground smooth. Tank is tested for leaks at 0.3 bar air pressure, then zinc phosphated and painted. Cap assembly is chrome plated brass.', physics: 'Fuel flows by gravity through the petcock to the carburetor float bowl. Fuel level in float bowl is maintained at constant height by the float valve — critical for correct air-fuel ratio. A vent tube prevents vacuum formation as fuel is consumed. The petcock has Reserve position at 1.5 litres remaining.', chemistry: 'Tank material: Low carbon steel (DC01) — excellent deep drawing properties, 0.8mm thickness, weight 2.2kg. Interior coated with fuel-resistant paint to prevent rust. Petcock: Brass body with rubber diaphragm. Fuel cap seal: NBR rubber — resistant to petrol. Petrol density = 0.72-0.75 kg/litre.', mathematics: 'Tank capacity = 13.5 litres. Fuel weight = 13.5 × 0.74 = 10 kg when full. Fuel consumption at 60 kmph = 35 km/litre. Range = 13.5 × 35 = 472 km. Reserve = 1.5 litres = 52 km range. Fuel flow at full power = 1.43 litres/hour.' },
+  { id: 8, part_id: 8, manufacturing: 'The Classic 350 uses a 12V 12Ah sealed MF lead-acid battery. Plates are made from lead-calcium alloy grids pasted with lead oxide. Positive plates use PbO₂, negative plates use sponge lead. Plates are assembled with polyethylene separators, inserted in polypropylene case, filled with sulphuric acid electrolyte and heat sealed.', physics: 'The battery converts chemical energy to electrical energy. Discharge: Pb + PbO₂ + 2H₂SO₄ → 2PbSO₄ + 2H₂O + electrical energy. Each cell generates 2.1V EMF. Six cells in series = 12.6V fully charged. During charging by alternator, reaction reverses. Internal resistance 0.01-0.02Ω causes voltage drop under load.', chemistry: 'Electrolyte: H₂SO₄ solution at SG 1.265-1.280. During discharge, H₂SO₄ is consumed and water forms — SG drops to 1.10 when fully discharged. Positive plate: PbO₂ — brown, oxidising agent. Negative plate: Pb — grey, reducing agent. Cell voltage = 1.685 + 0.356 = 2.041V.', mathematics: 'Capacity Q = 12 Ah. Energy E = V×Q = 12×12×3600 = 518,400 J. Starter motor current = 100A for 2 seconds. Voltage drop during starting: ΔV = I×r = 100×0.015 = 1.5V. Terminal voltage = 12.6 - 1.5 = 11.1V during cranking. Charging current = 1.2A at C/10 rate.' },
+  { id: 9, part_id: 9, manufacturing: 'The Classic 350 uses a flywheel magneto type alternator. The rotor consists of permanent magnets embedded in the flywheel. The stator has 12 coils wound with copper wire on laminated silicon steel cores. As flywheel rotates, rotating magnets induce AC voltage in stator coils, rectified to DC by bridge rectifier and regulated to 14.5V.', physics: 'Based on Faraday law — EMF = -N×dΦ/dt. As each magnet pole passes a stator coil, magnetic flux changes rapidly, inducing voltage. The 6-pole rotor produces 3 complete cycles per revolution. At 3000 RPM: frequency = 150 Hz AC. Permanent magnets require no external power.', chemistry: 'Rotor magnets: Ferrite (BaFe₁₂O₁₉) permanent magnets — remanence 0.38T. Stator core: Silicon steel laminations (3% Si) — reduces eddy current losses by 50%. Copper wire: 99.95% pure copper. Rectifier diodes: Silicon diodes, forward voltage 0.7V. Voltage regulator: SCR based crowbar circuit.', mathematics: 'Output power = 150W. Open circuit voltage at 3000 RPM = 18V AC. After rectification: VDC = 0.955 × 18 = 17.2V. Regulator clips to 14.5V. Current output = 150/14.5 = 10.3A. Charging current to battery = 10.3 - 6 (loads) = 4.3A.' },
+  { id: 10, part_id: 10, manufacturing: 'The wiring harness is manufactured by assembling individual insulated copper wires on a formboard layout. Each wire is cut to precise length, stripped, and crimped with terminals using automated crimping machines. Wire gauges range from 0.5mm² to 4mm². Wires are bundled with PVC tape and nylon cable ties. Connectors are injection moulded from nylon 66.', physics: 'The wiring harness connects all electrical components in series and parallel circuits. The main fuse (15A) protects the entire system. Individual circuits have separate fuses. Earth return is through the chassis frame. Switch contacts control current flow to each load. Connector reliability is critical — oxidised contacts cause voltage drop.', chemistry: 'Wire insulation: PVC — temperature rating 70°C, resistivity 10¹⁵ Ω.cm. High-temperature areas use XLPE rated 90°C. Conductor: Annealed copper (99.9% Cu) — conductivity 5.8×10⁷ S/m. Connector housing: Nylon 66 — melting point 265°C. Terminal plating: Tin prevents oxidation.', mathematics: 'Wire resistance R = ρL/A. For 1m of 1mm² copper: R = 0.0172Ω. Voltage drop at 10A: ΔV = 0.172V per metre. Total harness length ~15m. Headlight circuit: 12V × 35W = 2.92A. R = V/I = 12/2.92 = 4.1Ω headlight filament resistance.' },
+  { id: 11, part_id: 11, manufacturing: 'The ECU is manufactured on a PCB with SMD components soldered by automated pick-and-place and reflow soldering machines. Housed in a sealed aluminium enclosure for vibration and moisture protection. It processes inputs from multiple sensors and controls fuel injection timing, ignition timing, and idle speed.', physics: 'The ECU microprocessor runs at 16-32 MHz sampling sensor data thousands of times per second. It uses lookup tables stored in Flash memory to determine optimum fuel injection duration and ignition timing. Implements closed-loop control using oxygen sensor to maintain stoichiometric (14.7:1) air-fuel ratio.', chemistry: 'PCB: FR4 fibreglass with copper tracks (35 microns). Microprocessor: 16-bit automotive-grade IC. Flash memory: 512KB-2MB for fuel maps. Sensors: TPS, MAP, CKP, CTS, O₂ sensor. Output drivers: MOSFET transistors switch injectors and coil. Supply voltage: 12V, current 0.5-2A.', mathematics: 'Injection duration: PW = (MAF × AFR_target × K) / Injector_flow_rate. At idle: MAF=2g/s, AFR=14.7 → injection ≈ 2.5ms. Ignition timing: Base 32° BTDC ± corrections. ADC resolution: 10-bit = 1024 steps = 0.0049V per step on 5V reference.' },
+  { id: 12, part_id: 12, manufacturing: 'Front: 35mm telescopic hydraulic forks with 130mm travel. Inner tubes are carbon steel, hard chrome plated to 20 microns. Outer tubes are cast aluminium alloy. Inside: coil spring and hydraulic damper. Rear: Twin gas-charged shock absorbers with 5-step adjustable preload. Spring is 65Mn steel wire wound on CNC coiling machine.', physics: 'Front fork spring absorbs bump energy — F = k×x (Hooke Law). Spring rate k = 4.5 N/mm. When wheel hits 50mm bump at 60 kmph, kinetic energy = ½mv² = 14.9 J. This compresses spring by x = √(2E/k) = 81mm. Hydraulic damper converts remaining kinetic energy to heat.', chemistry: 'Fork inner tube: SAE 4130 chromoly steel — tensile strength 670 MPa. Chrome plating: Cr — hardness 1000 HV, low friction coefficient 0.16. Fork oil: SAE 10W mineral oil — kinematic viscosity 10 cSt. Outer tube: Aluminium alloy A380 die cast. Rear spring: 65Mn steel — tensile strength 1200 MPa.', mathematics: 'Front spring rate k_f = 4.5 N/mm. Natural frequency f_n = (1/2π)√(k/m) = 1.09 Hz. Optimal ride frequency 1-1.5 Hz. Fork oil quantity: 135ml per leg. Rear spring rate: 6.5 N/mm. Total suspension travel: Front 130mm, Rear 80mm. Static sag: 30mm front, 25mm rear with rider.' },
+  { id: 13, part_id: 13, manufacturing: 'The front disc brake uses a 300mm diameter, 5mm thick disc made from grey cast iron GCI 200. Disc is cast in sand mould, CNC machined on both faces to flatness tolerance of 0.05mm. Ventilation holes drilled for heat dissipation. 2-piston floating caliper cast from aluminium alloy. Brake pads made from semi-metallic friction compound moulded under heat and pressure.', physics: 'Braking converts kinetic energy to heat. At 80 kmph (22.2 m/s), KE = ½mv² = ½×195×22.2² = 48,100 J. Friction force F = μ×N where μ=0.38 and N is caliper clamping force. Disc must absorb 48,100 J in a typical stop. Temperature rises by ΔT = Q/(m×Cp) = 53°C per stop.', chemistry: 'Disc: Grey cast iron GCI 200 — 2.5-4% carbon as graphite flakes. Graphite provides solid lubrication and thermal conductivity 50 W/mK. Tensile strength 200 MPa, hardness 180-220 HB. Brake pad: Steel fibres (30%), copper fibres (10%), graphite (15%), phenolic resin binder. Friction coefficient 0.35-0.45.', mathematics: 'Braking force: F = μ × N = 0.38 × 3000N = 1140N. Braking torque: T = F × r = 1140 × 0.15 = 171 Nm. Deceleration: a = F/m = 1140/195 = 5.85 m/s². Stopping distance from 80 kmph: s = v²/2a = 22.2²/(2×5.85) = 42.1m.' },
+  { id: 14, part_id: 14, manufacturing: 'The Classic 350 uses a classic wide handlebar (800mm) made from seamless mild steel tube (22mm diameter, 2mm wall) bent on CNC tube bender. The handlebar is chrome plated. The steering head contains two tapered roller bearings. The front fork is clamped in upper and lower yokes made from forged aluminium alloy.', physics: 'Motorcycle steering works on countersteering — at speeds above 20 kmph, pushing right handlebar initiates right turn. Geometry defined by rake angle (27°), trail (92mm), and offset. Trail = (wheel radius × sin(rake)) - offset = 111mm. Gyroscopic effect of rotating wheels resists changes in direction.', chemistry: 'Handlebar: Mild steel (Fe 360) — tensile strength 360 MPa. Chrome plating: Cr layer 0.3 microns over 5 microns nickel — hardness 900 HV. Bearings: Tapered roller bearings — 52100 bearing steel hardness 60-64 HRC. Switch housing: PA66-GF30 (30% glass-filled nylon). Grip rubber: EPDM — weather resistant.', mathematics: 'Rake angle α = 27°. Trail T = 111mm. Wheelbase L = 1390mm. Turning radius at 30° steering lock: r = L/tan(30°) = 1390/0.577 = 2409mm = 2.4m. Handlebar torque = F × (width/2) = 50N × 0.4m = 20 Nm.' },
+  { id: 15, part_id: 15, manufacturing: 'The Classic 350 uses a wet multi-plate clutch with 6 friction plates alternating with 6 plain steel plates. Friction plates are stamped from steel and coated with cork composite friction material bonded under 200°C heat and 50 bar pressure. Steel plates are stamped from 65Mn spring steel and hardened. Six coil springs provide clamping force.', physics: 'Clutch transmits torque by friction between alternating friction and steel plates clamped by springs. Torque capacity T = n×μ×F×r_mean where n=12 friction surfaces, μ=0.12, F=2500N, r_mean=55mm. T = 12×0.12×2500×0.055 = 198 Nm — far exceeding engine torque of 28 Nm, giving safety factor of 7.', chemistry: 'Friction plates: Steel core with organic friction material — cellulose fibres, graphite, rubber, phenolic resin. Friction coefficient μ=0.12 in oil. Steel plates: 65Mn spring steel, hardened to 40-45 HRC. Engine oil acts as coolant and lubricant. Clutch springs: Chrome vanadium steel — high fatigue strength.', mathematics: 'Torque capacity T = 12×0.12×2500×0.055 = 198 Nm. Safety factor = 198/28 = 7.07. Heat generated during takeoff: P = T×Δω = 28×157 = 4396W. Plate temperature rise: ΔT = P×t/(m×Cp) = 58°C per start. Spring deflection: x = F/k = 2500/300 = 8.3mm.' },
+  { id: 16, part_id: 16, manufacturing: 'The Classic 350 has a 5-speed constant mesh gearbox integrated with engine. Gears are manufactured from 20MnCr5 alloy steel by gear hobbing. After hobbing, gears are carburised at 900°C for 4-6 hours, hardened to 58-62 HRC, and ground to final tooth profile accuracy of DIN class 6.', physics: 'The gearbox multiplies torque and reduces speed according to gear ratio. In 1st gear (ratio 2.72), engine torque of 28 Nm is multiplied to 76.2 Nm at output. Combined with primary drive (2.905) and final drive (2.684), total first gear ratio = 21.2:1 — allowing the motorcycle to start from rest.', chemistry: 'Gear material: 20MnCr5 alloy steel — chromium (1%) and manganese (1.25%) improve hardenability. Carburising creates hard case (0.8%C, 58-62 HRC) on tough core (0.2%C, 30-35 HRC). Gear oil: SAE 20W-50 engine oil with EP additives (ZDDP, sulphur compounds) for gear tooth protection.', mathematics: 'Gear ratios: 1st=2.72, 2nd=1.84, 3rd=1.32, 4th=1.04, 5th=0.85. Primary drive=2.905, Final drive=2.684. Speed in 1st at 3000 RPM: wheel RPM = 3000/21.2 = 141 RPM. Speed = 2π×0.305×141/60 = 4.5 m/s = 16.2 kmph. Max speed in 5th at 5500 RPM = 95.7 kmph.' },
+  { id: 17, part_id: 17, manufacturing: 'The drive chain is a 520 series roller chain (pitch 15.875mm). Chain links are made from carbon steel by stamping. Inner plates, outer plates, rollers, bushes, and pins are assembled on automated chain assembly machines. Chain is then heat treated, shot peened, and pre-stretched. Rear sprocket (42T) is mild steel laser cut. Front sprocket (14T) is machined steel.', physics: 'Chain drive transmits power with near 100% efficiency when lubricated. Chain tension has two components — tight side (T₁) and slack side (T₂). Ratio T₁/T₂ = e^(μθ) where μ=friction coefficient and θ=wrap angle. Centrifugal force in chain at high speed: Fc = mv²/r reduces effective tension.', chemistry: 'Chain: Low carbon steel (0.15-0.25% C) — good toughness. Pins and bushes: Case hardened medium carbon steel 50-55 HRC. O-ring chain: Nitrile rubber O-rings seal grease inside — extends life to 25,000 km. Chain lubricant: SAE 80W-90 gear oil reduces friction coefficient from 0.3 to 0.05. Sprocket: S45C steel with induction hardened teeth.', mathematics: 'Chain ratio = Rear/Front sprocket = 42/14 = 3.0:1. At max speed in 5th gear: wheel RPM = 277 RPM. Chain speed = 8.82 m/s. Chain tension in 1st gear: T₁ = 28×21.2/0.108 = 5493N. Chain ultimate strength = 24,000N. Safety factor = 24000/5493 = 4.4.' },
+  { id: 18, part_id: 18, manufacturing: 'The Classic 350 instrument cluster houses speedometer, tachometer, fuel gauge, and warning lights. The housing is injection moulded from ABS plastic. The speedometer uses a cable drive from front wheel hub — a flexible cable rotates a magnet inside the speedometer, inducing eddy currents in an aluminium drum that deflects the needle proportional to speed.', physics: 'The cable-driven speedometer uses electromagnetic induction. A rotating magnet creates rotating magnetic field that induces eddy currents in aluminium cup. The resulting electromagnetic torque deflects cup against spiral return spring — deflection proportional to rotation speed. Warning lights use LED technology — forward biased semiconductor junction emits photons.', chemistry: 'Speedometer magnet: Ferrite permanent magnet. Aluminium cup: Good electrical conductor (σ = 3.5×10⁷ S/m). Return spring: Phosphor bronze — excellent spring properties. Fuel sender: Wire-wound potentiometer. Dial face: Reverse printed polycarbonate. LED: GaAsP emits orange/red light. Housing: ABS plastic.', mathematics: 'At 60 kmph = 16.67 m/s: wheel RPM = 522 RPM. Cable RPM = 522. Fuel gauge resistance: Full = 10Ω, Empty = 180Ω. Gauge current: I = 12/(10+190) = 0.06A full, 0.032A empty. Meter deflection proportional to current. Tachometer counts 2 pulses/revolution.' },
+  { id: 19, part_id: 19, manufacturing: 'The Classic 350 features a dual-tone bench seat with steel base pan stamped from 1.2mm mild steel sheet. The base pan is powder coated. High-density polyurethane foam is moulded to shape in a closed mould at 40°C — two-component PU system (polyol + isocyanate) reacts and expands. Foam density is 35-40 kg/m³. Seat cover is PVC-coated fabric sewn with UV-resistant nylon thread.', physics: 'The seat foam acts as a spring-damper system for the rider. When a 75kg rider sits, foam compresses by 20-30mm. PU foam has non-linear stress-strain curve — initially soft for comfort, becoming progressively stiffer to prevent bottoming out. Seat height of 805mm affects ergonomics significantly.', chemistry: 'Foam: Polyurethane (PU) — formed by reaction of polyol with MDI isocyanate creating urethane bonds + CO₂ (causes foaming). Density 35-40 kg/m³. Cover: PVC-coated polyester fabric — provides waterproofing and abrasion resistance. Thread: Polyester (Dacron) — UV resistant, high tensile strength. Base pan: Mild steel 1.2mm.', mathematics: 'Seat area = 350mm × 280mm = 0.098 m². Rider weight 75kg, contact force = 750N. Average pressure = F/A = 750/0.098 = 7653 Pa = 7.65 kPa. Comfort limit: <10 kPa sustained. Foam spring rate: k = 8 N/mm. Deflection under 750N: x = F/k = 93.75mm (non-linear in reality). Seat height 805mm.' },
+];
 
 // API 1: Get all vehicles
 app.get('/vehicles', (req, res) => {
-  db.all('SELECT * FROM vehicles', (err, rows) => {
-    if (err) return res.status(500).json({ error: err.message });
-    res.json(rows);
-  });
+  res.json(vehicles);
 });
 
 // API 2: Get parts by vehicle
 app.get('/vehicles/:id/parts', (req, res) => {
-  db.all('SELECT * FROM parts WHERE vehicle_id = ?', [req.params.id], (err, rows) => {
-    if (err) return res.status(500).json({ error: err.message });
-    res.json(rows);
-  });
+  const vehicleId = parseInt(req.params.id);
+  const result = parts.filter(p => p.vehicle_id === vehicleId);
+  res.json(result);
 });
 
 // API 3: Get part detail
 app.get('/parts/:id', (req, res) => {
-  db.get('SELECT * FROM parts WHERE id = ?', [req.params.id], (err, part) => {
-    if (err) return res.status(500).json({ error: err.message });
-    db.get('SELECT * FROM part_details WHERE part_id = ?', [req.params.id], (err, detail) => {
-      if (err) return res.status(500).json({ error: err.message });
-      res.json({ part, detail });
-    });
-  });
+  const partId = parseInt(req.params.id);
+  const part = parts.find(p => p.id === partId);
+  const detail = part_details.find(d => d.part_id === partId);
+  res.json({ part, detail });
 });
 
 app.listen(PORT, () => {
